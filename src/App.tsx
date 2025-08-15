@@ -25,13 +25,12 @@ import { useNavigate } from "react-router-dom";
 const queryClient = new QueryClient();
 
 function AppContent() {
-  const { isAuthenticated, isOnboarded } = useAuth() // Initialize auth state
+  useAuth() // Initialize auth state
 
   return (
     <BrowserRouter>
-      <AuthRedirectHandler />
       <Routes>
-        <Route path="/" element={<Index />} />
+        <Route path="/" element={<IndexWithRedirect />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/onboarding" element={<AuthGuard><OnboardingPage /></AuthGuard>} />
@@ -49,25 +48,22 @@ function AppContent() {
   )
 }
 
-// Component to handle redirects on the index page
-function AuthRedirectHandler() {
+// Component that wraps Index with redirect logic
+function IndexWithRedirect() {
   const { isAuthenticated, isOnboarded } = useAppStore()
   const navigate = useNavigate()
   
   useEffect(() => {
-    // Only redirect from the index page
-    if (window.location.pathname === '/') {
-      if (isAuthenticated) {
-        if (isOnboarded) {
-          navigate('/dashboard', { replace: true })
-        } else {
-          navigate('/onboarding', { replace: true })
-        }
+    if (isAuthenticated) {
+      if (isOnboarded) {
+        navigate('/dashboard', { replace: true })
+      } else {
+        navigate('/onboarding', { replace: true })
       }
     }
   }, [isAuthenticated, isOnboarded, navigate])
   
-  return null
+  return <Index />
 }
 
 function App() {

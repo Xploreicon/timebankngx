@@ -1,50 +1,60 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { useAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
-import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Discover from "./pages/Discover";
 import Trades from "./pages/Trades";
-import TradeDetails from "./pages/TradeDetails";
 import Services from "./pages/Services";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
-import { ProtectedRoute } from "./routes/ProtectedRoute";
+import TradeDetails from "./pages/TradeDetails";
+import NotFound from "./pages/NotFound";
+import AuthPage from "./pages/auth/AuthPage";
+import AuthCallback from "./pages/auth/AuthCallback";
+import OnboardingPage from "./pages/auth/OnboardingPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
+import { AuthGuard } from "./routes/AuthGuard";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth/login" element={<Login />} />
-          <Route path="/auth/register" element={<Register />} />
-          <Route path="/onboarding" element={<Onboarding />} />
+function AppContent() {
+  useAuth() // Initialize auth state
 
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
-          <Route path="/trades" element={<ProtectedRoute><Trades /></ProtectedRoute>} />
-          <Route path="/trades/:id" element={<ProtectedRoute><TradeDetails /></ProtectedRoute>} />
-          <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/onboarding" element={<AuthGuard><OnboardingPage /></AuthGuard>} />
+        <Route path="/dashboard" element={<AuthGuard requireOnboarding><Dashboard /></AuthGuard>} />
+        <Route path="/discover" element={<AuthGuard requireOnboarding><Discover /></AuthGuard>} />
+        <Route path="/trades" element={<AuthGuard requireOnboarding><Trades /></AuthGuard>} />
+        <Route path="/trades/:id" element={<AuthGuard requireOnboarding><TradeDetails /></AuthGuard>} />
+        <Route path="/services" element={<AuthGuard requireOnboarding><Services /></AuthGuard>} />
+        <Route path="/profile" element={<AuthGuard requireOnboarding><Profile /></AuthGuard>} />
+        <Route path="/settings" element={<AuthGuard requireOnboarding><Settings /></AuthGuard>} />
+        <Route path="/analytics" element={<AuthGuard requireOnboarding><AnalyticsPage /></AuthGuard>} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
+  )
+}
 
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AppContent />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

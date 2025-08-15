@@ -7,14 +7,298 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
-      [_ in never]: never
+      achievements: {
+        Row: {
+          id: string
+          key: Database["public"]["Enums"]["achievement_key"]
+          level: string | null
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          key: Database["public"]["Enums"]["achievement_key"]
+          level?: string | null
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          key?: Database["public"]["Enums"]["achievement_key"]
+          level?: string | null
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      disputes: {
+        Row: {
+          created_at: string
+          evidence: Json
+          id: string
+          issue_type: string | null
+          mediator_id: string | null
+          status: Database["public"]["Enums"]["dispute_status"]
+          trade_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          evidence?: Json
+          id?: string
+          issue_type?: string | null
+          mediator_id?: string | null
+          status?: Database["public"]["Enums"]["dispute_status"]
+          trade_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          evidence?: Json
+          id?: string
+          issue_type?: string | null
+          mediator_id?: string | null
+          status?: Database["public"]["Enums"]["dispute_status"]
+          trade_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: true
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          category: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          is_onboarded: boolean
+          location: string | null
+          phone: string | null
+          trust_score: number
+          updated_at: string
+          verification_cac: boolean
+          verification_email: boolean
+          verification_phone: boolean
+        }
+        Insert: {
+          avatar_url?: string | null
+          category?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          is_onboarded?: boolean
+          location?: string | null
+          phone?: string | null
+          trust_score?: number
+          updated_at?: string
+          verification_cac?: boolean
+          verification_email?: boolean
+          verification_phone?: boolean
+        }
+        Update: {
+          avatar_url?: string | null
+          category?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          is_onboarded?: boolean
+          location?: string | null
+          phone?: string | null
+          trust_score?: number
+          updated_at?: string
+          verification_cac?: boolean
+          verification_email?: boolean
+          verification_phone?: boolean
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          reviewee_id: string
+          reviewer_id: string
+          trade_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          reviewee_id: string
+          reviewer_id: string
+          trade_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          reviewee_id?: string
+          reviewer_id?: string
+          trade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: true
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          availability: boolean
+          category: string | null
+          created_at: string
+          description: string | null
+          hourly_rate: number
+          id: string
+          skill_level: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          availability?: boolean
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          hourly_rate?: number
+          id?: string
+          skill_level?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          availability?: boolean
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          hourly_rate?: number
+          id?: string
+          skill_level?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trade_messages: {
+        Row: {
+          created_at: string
+          id: string
+          sender_id: string
+          text: string
+          trade_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sender_id: string
+          text: string
+          trade_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sender_id?: string
+          text?: string
+          trade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_messages_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trades: {
+        Row: {
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          hours_offered: number
+          hours_requested: number
+          id: string
+          proposer_id: string
+          provider_id: string
+          service_offered_id: string | null
+          service_requested_id: string | null
+          status: Database["public"]["Enums"]["trade_status"]
+          updated_at: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          hours_offered: number
+          hours_requested: number
+          id?: string
+          proposer_id: string
+          provider_id: string
+          service_offered_id?: string | null
+          service_requested_id?: string | null
+          status?: Database["public"]["Enums"]["trade_status"]
+          updated_at?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          hours_offered?: number
+          hours_requested?: number
+          id?: string
+          proposer_id?: string
+          provider_id?: string
+          service_offered_id?: string | null
+          service_requested_id?: string | null
+          status?: Database["public"]["Enums"]["trade_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trades_service_offered_id_fkey"
+            columns: ["service_offered_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trades_service_requested_id_fkey"
+            columns: ["service_requested_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +307,18 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      achievement_key:
+        | "first_trade"
+        | "loop_master"
+        | "time_millionaire"
+        | "community_builder"
+      dispute_status: "open" | "in_review" | "resolved" | "rejected"
+      trade_status:
+        | "pending"
+        | "active"
+        | "completed"
+        | "disputed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +445,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      achievement_key: [
+        "first_trade",
+        "loop_master",
+        "time_millionaire",
+        "community_builder",
+      ],
+      dispute_status: ["open", "in_review", "resolved", "rejected"],
+      trade_status: ["pending", "active", "completed", "disputed", "cancelled"],
+    },
   },
 } as const

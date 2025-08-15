@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 
 export const TimeCreditsCard = () => {
-  const user = useAppStore(s => s.currentUser)
+  const { profile } = useAppStore()
   const [value, setValue] = useState(0)
+  
+  // Mock time credits for now - can be enhanced with real data later
+  const timeCredits = profile?.trust_score || 50
 
   useEffect(() => {
-    const target = user?.timeCredits ?? 0
+    const target = timeCredits
     let raf: number
     const start = performance.now()
     const step = (t: number) => {
@@ -16,7 +19,7 @@ export const TimeCreditsCard = () => {
     }
     raf = requestAnimationFrame(step)
     return () => cancelAnimationFrame(raf)
-  }, [user?.timeCredits])
+  }, [timeCredits])
 
   return (
     <div className="rounded-xl p-6 bg-gradient-to-br from-accent/30 to-primary/5 border shadow-[var(--shadow-elevate)]">

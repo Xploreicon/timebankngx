@@ -1,75 +1,166 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { supabase } from '@/integrations/supabase/client'
+import { Session, User as SupabaseUser } from '@supabase/supabase-js'
 import { mock } from '@/data/mock'
-import type { User, Service, Trade, Message } from '@/types'
+
+export interface Profile {
+  id: string
+  email?: string
+  display_name?: string
+  phone?: string
+  location?: string
+  category?: string
+  trust_score: number
+  verification_phone: boolean
+  verification_email: boolean
+  verification_cac: boolean
+  is_onboarded: boolean
+  avatar_url?: string
+  created_at: string
+  updated_at: string
+}
 
 interface NotificationItem { id: string; text: string; time: Date }
 
 interface AppState {
-  currentUser: User | null
+  session: Session | null
+  user: SupabaseUser | null
+  profile: Profile | null
   isAuthenticated: boolean
   isOnboarded: boolean
-  users: User[]
-  services: Service[]
-  trades: Trade[]
   notifications: NotificationItem[]
+  isLoading: boolean
+  
   // Auth
-  login: (identifier: string) => { otpSent: boolean }
-  verifyOtp: (code: string) => boolean
-  logout: () => void
-  register: (user: Omit<User, 'id' | 'createdAt' | 'timeCredits' | 'trustScore' | 'verificationStatus'> & { verificationStatus?: boolean }) => User
-  // Onboarding
-  completeOnboarding: () => void
+  setAuth: (session: Session | null, user: SupabaseUser | null) => void
+  setProfile: (profile: Profile | null) => void
+  signUp: (email: string, password: string, displayName?: string) => Promise<{ error?: string }>
+  signIn: (email: string, password: string) => Promise<{ error?: string }>
+  signOut: () => Promise<void>
+  
+  // Profile & Onboarding
+  updateProfile: (updates: Partial<Profile>) => Promise<{ error?: string }>
+  completeOnboarding: () => Promise<{ error?: string }>
+  
   // Data operations
-  addService: (s: Omit<Service,'id'>) => Service
-  toggleServiceAvailability: (id: string) => void
-  addTradeMessage: (tradeId: string, m: Message) => void
   addNotification: (text: string) => void
 }
 
 export const useAppStore = create<AppState>()(persist((set, get) => ({
-  currentUser: null,
+  session: null,
+  user: null,
+  profile: null,
   isAuthenticated: false,
   isOnboarded: false,
-  users: mock.users,
-  services: mock.services,
-  trades: mock.trades,
   notifications: [],
+  isLoading: false,
 
-  login: () => ({ otpSent: true }),
-  verifyOtp: (code: string) => {
-    if (code === '123456') {
-      const user = mock.users[0]
-      set({ currentUser: user, isAuthenticated: true })
-      return true
-    }
-    return false
+  setAuth: (session, user) => {
+    set({ 
+      session, 
+      user, 
+      isAuthenticated: !!session && !!user 
+    })
   },
-  logout: () => set({ currentUser: null, isAuthenticated: false, isOnboarded: false }),
-  register: (data) => {
-    const newUser: User = {
-      id: `u${get().users.length + 1}`,
-      businessName: data.businessName,
-      phone: data.phone,
-      email: data.email,
-      category: data.category,
-      location: data.location,
-      timeCredits: 50,
-      trustScore: 75,
-      verificationStatus: !!data.verificationStatus,
-      createdAt: new Date(),
-    }
-    set({ users: [newUser, ...get().users], currentUser: newUser, isAuthenticated: true })
-    return newUser
-  },
-  completeOnboarding: () => set({ isOnboarded: true }),
 
-  addService: (s) => {
-    const service: Service = { ...s, id: `s${get().services.length + 1}` }
-    set({ services: [service, ...get().services] })
-    return service
+  setProfile: (profile) => {
+    set({ 
+      profile,
+      isOnboarded: profile?.is_onboarded || false
+    })
   },
-  toggleServiceAvailability: (id) => set({ services: get().services.map(s => s.id === id ? { ...s, availability: !s.availability } : s) }),
-  addTradeMessage: (tradeId, m) => set({ trades: get().trades.map(t => t.id === tradeId ? { ...t, messages: [...t.messages, m] } : t) }),
-  addNotification: (text) => set({ notifications: [{ id: crypto.randomUUID(), text, time: new Date() }, ...get().notifications].slice(0, 20) })
-}), { name: 'timebank-ng' }))
+
+  signUp: async (email: string, password: string, displayName?: string) => {
+    try {
+      set({ isLoading: true })
+      
+      const redirectUrl = `${window.location.origin}/auth/callback`
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: displayName ? { display_name: displayName } : undefined
+        }
+      })
+      
+      if (error) return { error: error.message }
+      
+      return {}
+    } catch (error) {
+      return { error: 'An unexpected error occurred' }
+    } finally {
+      set({ isLoading: false })
+    }
+  },
+
+  signIn: async (email: string, password: string) => {
+    try {
+      set({ isLoading: true })
+      
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+      
+      if (error) return { error: error.message }
+      
+      return {}
+    } catch (error) {
+      return { error: 'An unexpected error occurred' }
+    } finally {
+      set({ isLoading: false })
+    }
+  },
+
+  signOut: async () => {
+    try {
+      await supabase.auth.signOut()
+      set({
+        session: null,
+        user: null,
+        profile: null,
+        isAuthenticated: false,
+        isOnboarded: false
+      })
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
+  },
+
+  updateProfile: async (updates: Partial<Profile>) => {
+    try {
+      const { user } = get()
+      if (!user) return { error: 'Not authenticated' }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id)
+
+      if (error) return { error: error.message }
+
+      // Update local state
+      const currentProfile = get().profile
+      if (currentProfile) {
+        set({ profile: { ...currentProfile, ...updates } })
+      }
+
+      return {}
+    } catch (error) {
+      return { error: 'Failed to update profile' }
+    }
+  },
+
+  completeOnboarding: async () => {
+    return await get().updateProfile({ is_onboarded: true })
+  },
+
+  addNotification: (text) => set({ 
+    notifications: [
+      { id: crypto.randomUUID(), text, time: new Date() }, 
+      ...get().notifications
+    ].slice(0, 20) 
+  })
+}), { name: 'timebank-store' }))

@@ -7,7 +7,8 @@ import { useAppStore } from '@/store/appStore'
 import { Stars } from '@/components/common/Stars'
 
 const Dashboard = () => {
-  const user = useAppStore(s => s.currentUser)
+  const { profile } = useAppStore()
+  
   return (
     <AppShell>
       <main className="space-y-8">
@@ -18,10 +19,10 @@ const Dashboard = () => {
             <div className="mt-4 p-4 rounded-lg border">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold">Welcome, {user?.businessName}</h3>
-                  <p className="text-sm text-muted-foreground">Location: {user?.location}</p>
+                  <h3 className="font-semibold">Welcome, {profile?.display_name || 'User'}</h3>
+                  <p className="text-sm text-muted-foreground">Location: {profile?.location || 'Not specified'}</p>
                 </div>
-                <Stars score={user?.trustScore ?? 0} />
+                <Stars score={profile?.trust_score ?? 0} />
               </div>
             </div>
           </div>

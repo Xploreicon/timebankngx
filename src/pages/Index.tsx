@@ -15,10 +15,10 @@ const Index = () => {
           Exchange skills using time credits. Build trust, grow faster, and keep cash for what matters.
         </p>
         <div className="mt-10 flex items-center justify-center gap-4">
-          <Link to="/auth/register" className="px-6 py-3 rounded-lg bg-accent text-accent-foreground font-semibold shadow-[var(--shadow-elevate)] hover:opacity-90 transition">
+          <Link to="/auth" className="px-6 py-3 rounded-lg bg-accent text-accent-foreground font-semibold shadow-[var(--shadow-elevate)] hover:opacity-90 transition">
             Get Started
           </Link>
-          <Link to="/auth/login" className="px-6 py-3 rounded-lg bg-secondary text-secondary-foreground font-semibold hover:bg-muted transition">
+          <Link to="/auth" className="px-6 py-3 rounded-lg bg-secondary text-secondary-foreground font-semibold hover:bg-muted transition">
             Log In
           </Link>
         </div>

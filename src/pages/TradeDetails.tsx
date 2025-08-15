@@ -1,56 +1,139 @@
 import AppShell from '@/components/layout/AppShell'
 import { useParams } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
-import { useMemo, useRef, useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { toast } from '@/hooks/use-toast'
 
 export default function TradeDetails(){
   const { id } = useParams()
-  const trade = useAppStore(s=>s.trades.find(t=>t.id===id))
-  const currentUser = useAppStore(s=>s.currentUser)
-  const addMsg = useAppStore(s=>s.addTradeMessage)
-  const [text, setText] = useState('')
+  const { trades, fetchTrades, addTradeMessage, user } = useAppStore()
+  const [message, setMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Simple swipe card
-  const cardRef = useRef<HTMLDivElement>(null)
-  const [dx, setDx] = useState(0)
-  const onPointerMove = (e: React.PointerEvent) => setDx(prev => prev + e.movementX)
-  const onPointerUp = () => { setDx(0) }
+  useEffect(() => {
+    fetchTrades()
+  }, [fetchTrades])
 
-  const send = () => {
-    if(!text || !trade || !currentUser) return
-    addMsg(trade.id, { id: crypto.randomUUID(), senderId: currentUser.id, text, timestamp: new Date() })
-    setText('')
+  const trade = useMemo(() => 
+    trades.find(t => t.id === id), 
+    [trades, id]
+  )
+
+  const sendMessage = async () => {
+    if (!message.trim() || !trade) return
+    
+    setIsLoading(true)
+    const { error } = await addTradeMessage(trade.id, { text: message })
+    
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to send message'
+      })
+    } else {
+      setMessage('')
+    }
+    setIsLoading(false)
   }
 
-  if(!trade) return <AppShell><div className="p-6">Trade not found</div></AppShell>
+  if (!trade) {
+    return (
+      <AppShell>
+        <div className="p-6 text-center">
+          <h2 className="text-xl font-semibold mb-2">Trade not found</h2>
+          <p className="text-muted-foreground">The trade you're looking for doesn't exist.</p>
+        </div>
+      </AppShell>
+    )
+  }
 
   return (
     <AppShell>
       <main className="grid lg:grid-cols-[1fr_300px] gap-6">
-        <section className="border rounded-lg p-4">
-          <h2 className="font-brand text-xl mb-4">Chat</h2>
-          <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-2">
-            {trade.messages.map(m => (
-              <div key={m.id} className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${m.senderId===currentUser?.id ? 'ml-auto bg-accent text-accent-foreground' : 'mr-auto bg-secondary text-secondary-foreground'}`}>
-                {m.text}
+        <Card>
+          <CardHeader>
+            <CardTitle>Trade Communication</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-[400px] overflow-y-auto mb-4">
+              {/* Mock messages for now since we need to implement proper messaging */}
+              <div className="flex items-start gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 bg-secondary rounded-lg p-3">
+                  <p className="text-sm">Hello! I'm interested in this trade.</p>
+                  <span className="text-xs text-muted-foreground">2 hours ago</span>
+                </div>
               </div>
-            ))}
-          </div>
-          <div className="mt-3 flex gap-2">
-            <input value={text} onChange={e=>setText(e.target.value)} placeholder="Type a message" className="flex-1 px-3 py-2 rounded-md border bg-background" />
-            <button onClick={send} className="px-4 py-2 rounded-md bg-accent text-accent-foreground">Send</button>
-          </div>
-        </section>
-        <aside className="border rounded-lg p-4 h-fit">
-          <h3 className="font-semibold mb-3">Propose Exchange</h3>
-          <div ref={cardRef} onPointerMove={onPointerMove} onPointerUp={onPointerUp} className="select-none cursor-grab">
-            <div style={{ transform: `translateX(${dx}px) rotate(${dx/20}deg)`}} className="transition-transform will-change-transform p-4 rounded-xl border bg-gradient-to-br from-accent/30 to-primary/5">
-              <p className="text-sm">Swipe right to accept, left to skip</p>
-              <p className="mt-2 font-medium">{trade.serviceOffered.title} ↔ {trade.serviceRequested.title}</p>
-              <p className="text-xs text-muted-foreground">{trade.hoursOffered}h for {trade.hoursRequested}h</p>
+              
+              <div className="flex items-start gap-3 justify-end">
+                <div className="flex-1 bg-primary text-primary-foreground rounded-lg p-3 max-w-[80%] ml-auto">
+                  <p className="text-sm">Great! When can we start?</p>
+                  <span className="text-xs opacity-80">1 hour ago</span>
+                </div>
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback>M</AvatarFallback>
+                </Avatar>
+              </div>
             </div>
-          </div>
-        </aside>
+            
+            <div className="flex gap-2">
+              <Input 
+                placeholder="Type your message..." 
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                onKeyPress={e => e.key === 'Enter' && sendMessage()}
+              />
+              <Button onClick={sendMessage} disabled={isLoading || !message.trim()}>
+                Send
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Trade Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <h4 className="font-medium">Status</h4>
+                <Badge variant="secondary" className="capitalize">
+                  {trade.status}
+                </Badge>
+              </div>
+              
+              <div>
+                <h4 className="font-medium">Service Requested</h4>
+                <p className="text-sm text-muted-foreground">
+                  {trade.service_requested?.title || 'Service details'}
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-medium">Service Offered</h4>
+                <p className="text-sm text-muted-foreground">
+                  {trade.service_offered?.title || 'Service details'}
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-medium">Duration</h4>
+                <p className="text-sm text-muted-foreground">
+                  {trade.hours_requested || 1} hours requested
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </main>
     </AppShell>
   )

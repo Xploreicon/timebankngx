@@ -1,3 +1,4 @@
+import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { useNavigate } from 'react-router-dom'
@@ -11,26 +12,36 @@ const statusColor: Record<string, string> = {
 }
 
 export const ActiveTradesGrid = () => {
-  const trades = useAppStore(s => s.trades)
+  const { trades, fetchTrades } = useAppStore()
   const navigate = useNavigate()
+  
+  React.useEffect(() => {
+    fetchTrades()
+  }, [fetchTrades])
+
   return (
     <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
       {trades.map((t) => {
-        const total = t.hoursRequested
+        const total = t.hours_requested || 1
         const done = t.status === 'completed' ? total : Math.floor(total / 2)
         const pct = Math.round((done/total)*100)
         return (
           <div key={t.id} className="p-4 rounded-lg border hover:shadow-md transition cursor-pointer" onClick={() => navigate(`/trades/${t.id}`)}>
             <div className="flex items-center justify-between">
-              <h4 className="font-semibold">{t.serviceRequested.title}</h4>
+              <h4 className="font-semibold">{t.service_requested?.title || 'Trade'}</h4>
               <Badge className={`${statusColor[t.status]} capitalize`}>{t.status}</Badge>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">For {t.serviceOffered.title}</p>
+            <p className="text-sm text-muted-foreground mt-1">For {t.service_offered?.title || 'Service'}</p>
             <Progress className="mt-3" value={pct} />
             <div className="mt-2 text-xs text-muted-foreground">{done}h / {total}h</div>
           </div>
         )
       })}
+      {trades.length === 0 && (
+        <div className="col-span-full text-center p-6 text-muted-foreground">
+          No active trades yet. Start trading to see your progress here!
+        </div>
+      )}
     </div>
   )
 }

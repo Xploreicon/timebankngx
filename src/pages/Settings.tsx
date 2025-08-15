@@ -1,15 +1,25 @@
 import AppShell from '@/components/layout/AppShell'
 import { useAppStore } from '@/store/appStore'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function Settings(){
-  const logout = useAppStore(s=>s.logout)
+  const { signOut } = useAppStore()
+  
   return (
     <AppShell>
       <main className="max-w-xl mx-auto space-y-6">
         <h2 className="font-brand text-2xl">Settings</h2>
-        <div className="p-4 rounded-lg border">
-          <button onClick={logout} className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground">Log out</button>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Account Settings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={signOut} variant="destructive">
+              Sign Out
+            </Button>
+          </CardContent>
+        </Card>
       </main>
     </AppShell>
   )

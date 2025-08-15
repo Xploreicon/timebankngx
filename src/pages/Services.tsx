@@ -1,4 +1,4 @@
-import AppShell from '@/components/layout/AppShell'
+import Layout from '@/components/Layout'
 import { useAppStore } from '@/store/appStore'
 import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -56,7 +56,7 @@ export default function Services(){
   }
 
   return (
-    <AppShell>
+    <Layout>
       <main className="grid lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -124,6 +124,6 @@ export default function Services(){
           </CardContent>
         </Card>
       </main>
-    </AppShell>
+    </Layout>
   )
 }

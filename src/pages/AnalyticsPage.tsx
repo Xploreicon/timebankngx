@@ -1,4 +1,4 @@
-import AppShell from '@/components/layout/AppShell'
+import Layout from '@/components/Layout'
 import { MetricsGrid } from '@/components/analytics/MetricsGrid'
 import { TimeFlowChart } from '@/components/analytics/TimeFlowChart'
 import { ROICalculator } from '@/components/analytics/ROICalculator'
@@ -23,7 +23,7 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <AppShell>
+    <Layout>
       <main className="space-y-6">
         <div className="flex items-center gap-3">
           <BarChart3 className="h-6 w-6 text-primary" />
@@ -52,6 +52,6 @@ export default function AnalyticsPage() {
           <NetworkGraph />
         </div>
       </main>
-    </AppShell>
+    </Layout>
   )
 }

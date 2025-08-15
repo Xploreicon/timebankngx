@@ -1,4 +1,4 @@
-import AppShell from '@/components/layout/AppShell'
+import Layout from '@/components/Layout'
 import { useAppStore } from '@/store/appStore'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -7,7 +7,7 @@ export default function Settings(){
   const { signOut } = useAppStore()
   
   return (
-    <AppShell>
+    <Layout>
       <main className="max-w-xl mx-auto space-y-6">
         <h2 className="font-brand text-2xl">Settings</h2>
         <Card>
@@ -21,6 +21,6 @@ export default function Settings(){
           </CardContent>
         </Card>
       </main>
-    </AppShell>
+    </Layout>
   )
 }

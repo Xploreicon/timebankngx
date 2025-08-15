@@ -1,0 +1,208 @@
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { useAppStore } from '@/store/appStore'
+import { 
+  Home, 
+  Search, 
+  ArrowLeftRight, 
+  Briefcase, 
+  User, 
+  LogOut,
+  Clock,
+  Menu
+} from 'lucide-react'
+import { useState } from 'react'
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+
+const navigationItems = [
+  { path: '/dashboard', label: 'Dashboard', icon: Home },
+  { path: '/discover', label: 'Discover', icon: Search },
+  { path: '/trades', label: 'My Trades', icon: ArrowLeftRight },
+  { path: '/services', label: 'Services', icon: Briefcase },
+  { path: '/profile', label: 'Profile', icon: User }
+]
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { profile, signOut } = useAppStore()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const handleSignOut = async () => {
+    await signOut()
+    navigate('/')
+  }
+
+  const isActive = (path: string) => location.pathname === path
+
+  const NavigationContent = () => (
+    <nav className="space-y-2">
+      {navigationItems.map((item) => {
+        const Icon = item.icon
+        return (
+          <Link
+            key={item.path}
+            to={item.path}
+            onClick={() => setMobileMenuOpen(false)}
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+              isActive(item.path)
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            }`}
+          >
+            <Icon className="h-5 w-5" />
+            <span className="font-medium">{item.label}</span>
+          </Link>
+        )
+      })}
+    </nav>
+  )
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
+          {/* Logo */}
+          <Link to="/dashboard" className="flex items-center gap-2 font-brand text-xl">
+            <Clock className="h-6 w-6 text-primary" />
+            <span>TimeBank</span>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-6">
+            {navigationItems.map((item) => {
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive(item.path)
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              )
+            })}
+          </nav>
+
+          {/* User Info & Actions */}
+          <div className="flex items-center gap-4">
+            {/* Time Credits */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-secondary rounded-full">
+              <Clock className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">
+                {profile?.trust_score || 0} credits
+              </span>
+            </div>
+
+            {/* User Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={profile?.avatar_url} alt={profile?.display_name} />
+                    <AvatarFallback>
+                      {profile?.display_name?.charAt(0) || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <div className="flex flex-col space-y-1 p-2">
+                  <p className="text-sm font-medium leading-none">{profile?.display_name}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {profile?.email}
+                  </p>
+                </div>
+                <DropdownMenuItem asChild>
+                  <Link to="/profile">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings">
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Mobile Menu */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72">
+                <div className="flex flex-col h-full">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Clock className="h-6 w-6 text-primary" />
+                    <span className="font-brand text-xl">TimeBank</span>
+                  </div>
+                  
+                  <NavigationContent />
+                  
+                  <div className="mt-auto pt-6">
+                    <div className="flex items-center gap-2 p-3 bg-secondary rounded-lg mb-4">
+                      <Clock className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">
+                        {profile?.trust_score || 0} credits
+                      </span>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleSignOut}
+                      className="w-full"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Log out
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-6">
+        {children}
+      </main>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t">
+        <nav className="flex items-center justify-around py-2">
+          {navigationItems.map((item) => {
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex flex-col items-center gap-1 px-3 py-2 ${
+                  isActive(item.path) ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="text-xs">{item.label}</span>
+              </Link>
+            )
+          })}
+        </nav>
+      </div>
+    </div>
+  )
+}

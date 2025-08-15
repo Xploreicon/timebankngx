@@ -1,4 +1,4 @@
-import AppShell from '@/components/layout/AppShell'
+import Layout from '@/components/Layout'
 import { useAppStore } from '@/store/appStore'
 import { useMemo, useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
@@ -26,7 +26,7 @@ export default function Discover(){
 
   if (isLoading) {
     return (
-      <AppShell>
+      <Layout>
         <div className="grid lg:grid-cols-[260px_1fr] gap-6">
           <Skeleton className="h-40 w-full" />
           <div className="space-y-4">
@@ -38,12 +38,12 @@ export default function Discover(){
             </div>
           </div>
         </div>
-      </AppShell>
+      </Layout>
     )
   }
 
   return (
-    <AppShell>
+    <Layout>
       <main className="grid lg:grid-cols-[260px_1fr] gap-6">
         <aside className="hidden lg:block border rounded-lg p-4 h-fit sticky top-20">
           <h3 className="font-semibold mb-3">Filters</h3>
@@ -93,6 +93,6 @@ export default function Discover(){
           )}
         </section>
       </main>
-    </AppShell>
+    </Layout>
   )
 }

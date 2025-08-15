@@ -18,14 +18,18 @@ import AuthCallback from "./pages/auth/AuthCallback";
 import OnboardingPage from "./pages/auth/OnboardingPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import { AuthGuard } from "./routes/AuthGuard";
+import { useAppStore } from "./store/appStore";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const queryClient = new QueryClient();
 
 function AppContent() {
-  useAuth() // Initialize auth state
+  const { isAuthenticated, isOnboarded } = useAuth() // Initialize auth state
 
   return (
     <BrowserRouter>
+      <AuthRedirectHandler />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<AuthPage />} />
@@ -43,6 +47,27 @@ function AppContent() {
       </Routes>
     </BrowserRouter>
   )
+}
+
+// Component to handle redirects on the index page
+function AuthRedirectHandler() {
+  const { isAuthenticated, isOnboarded } = useAppStore()
+  const navigate = useNavigate()
+  
+  useEffect(() => {
+    // Only redirect from the index page
+    if (window.location.pathname === '/') {
+      if (isAuthenticated) {
+        if (isOnboarded) {
+          navigate('/dashboard', { replace: true })
+        } else {
+          navigate('/onboarding', { replace: true })
+        }
+      }
+    }
+  }, [isAuthenticated, isOnboarded, navigate])
+  
+  return null
 }
 
 function App() {

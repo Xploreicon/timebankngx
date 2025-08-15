@@ -1,4 +1,4 @@
-import AppShell from '@/components/layout/AppShell'
+import Layout from '@/components/Layout'
 import { useParams } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import { useState, useEffect, useMemo } from 'react'
@@ -44,17 +44,17 @@ export default function TradeDetails(){
 
   if (!trade) {
     return (
-      <AppShell>
+      <Layout>
         <div className="p-6 text-center">
           <h2 className="text-xl font-semibold mb-2">Trade not found</h2>
           <p className="text-muted-foreground">The trade you're looking for doesn't exist.</p>
         </div>
-      </AppShell>
+      </Layout>
     )
   }
 
   return (
-    <AppShell>
+    <Layout>
       <main className="grid lg:grid-cols-[1fr_300px] gap-6">
         <Card>
           <CardHeader>
@@ -135,6 +135,6 @@ export default function TradeDetails(){
           </Card>
         </div>
       </main>
-    </AppShell>
+    </Layout>
   )
 }

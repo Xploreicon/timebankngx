@@ -1,4 +1,4 @@
-import AppShell from '@/components/layout/AppShell'
+import Layout from '@/components/Layout'
 import { useAppStore } from '@/store/appStore'
 import { useNavigate } from 'react-router-dom'
 
@@ -6,7 +6,7 @@ export default function Trades(){
   const trades = useAppStore(s=>s.trades)
   const navigate = useNavigate()
   return (
-    <AppShell>
+    <Layout>
       <main className="space-y-4">
         {trades.map(t => (
           <div key={t.id} className="p-4 border rounded-lg hover:shadow-md transition cursor-pointer" onClick={()=>navigate(`/trades/${t.id}`)}>
@@ -18,6 +18,6 @@ export default function Trades(){
           </div>
         ))}
       </main>
-    </AppShell>
+    </Layout>
   )
 }

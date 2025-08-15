@@ -1,4 +1,4 @@
-import AppShell from '@/components/layout/AppShell'
+import Layout from '@/components/Layout'
 import { useAppStore } from '@/store/appStore'
 import { Stars } from '@/components/common/Stars'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -75,7 +75,7 @@ export default function Profile() {
   }
 
   return (
-    <AppShell>
+    <Layout>
       <div className="max-w-6xl mx-auto space-y-8 p-6">
         
         {/* Profile Header */}
@@ -356,6 +356,6 @@ export default function Profile() {
         </Card>
 
       </div>
-    </AppShell>
+    </Layout>
   )
 }

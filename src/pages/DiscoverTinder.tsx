@@ -84,33 +84,92 @@ export default function DiscoverTinder() {
     (group: MatchGroup): TinderCardMatch | null => {
       if (!user) return null
 
-      const myParticipant =
-        group.myParticipant ??
-        group.participants.find((participant) => participant.profile.id === user.id)
-      const otherParticipant = group.participants.find(
-        (participant) => participant.profile.id !== user.id
+      const sortedParticipants = [...group.participants].sort(
+        (a, b) => a.roleIndex - b.roleIndex
+      )
+      const myIndex = sortedParticipants.findIndex(
+        (participant) => participant.profile.id === user.id
       )
 
-      if (!myParticipant || !otherParticipant) return null
+      if (myIndex === -1) return null
 
-      const trustScore = otherParticipant.profile.trust_score ?? 50
-      const offersCategory = otherParticipant.offerCategory
-      const needsCategory = otherParticipant.needCategory
-      const isPerfectCategoryMatch = myParticipant.offerCategory === needsCategory
+      const myParticipant = sortedParticipants[myIndex]
+      const totalParticipants = sortedParticipants.length
+      if (!myParticipant || totalParticipants < 2) return null
 
+      const prevIndex = (myIndex - 1 + totalParticipants) % totalParticipants
+      const nextIndex = (myIndex + 1) % totalParticipants
+
+      const receiver = sortedParticipants[nextIndex] // You deliver to this profile
+      const giver = sortedParticipants[prevIndex] // You receive from this profile
+
+      const resolveTrust = (participant: MatchGroup['participants'][number]) =>
+        participant.profile.trust_score ?? 50
+
+      const calcHours = (participant: MatchGroup['participants'][number]) =>
+        Number(
+          Math.max(1, resolveTrust(participant) / 20 + HOURS_BASELINE - 1).toFixed(1)
+        )
+
+      const hoursFromGiver = calcHours(giver)
+      const hoursToReceiver = calcHours(receiver)
+
+      const receiveCategory = giver.offerCategory
+      const deliverCategory = receiver.needCategory
+
+      const loopPartners = []
+
+      if (totalParticipants === 2) {
+        loopPartners.push({
+          userId: giver.profile.id,
+          userName: giver.profile.display_name || 'Matched Member',
+          location: giver.profile.location,
+          offersCategory: giver.offerCategory,
+          needsCategory: giver.needCategory,
+          trustScore: resolveTrust(giver),
+          relation: 'mutual' as const,
+          hoursTheyProvide: hoursFromGiver,
+          hoursYouProvide: hoursToReceiver
+        })
+      } else {
+        loopPartners.push({
+          userId: giver.profile.id,
+          userName: giver.profile.display_name || 'Matched Member',
+          location: giver.profile.location,
+          offersCategory: giver.offerCategory,
+          needsCategory: giver.needCategory,
+          trustScore: resolveTrust(giver),
+          relation: 'receive_from' as const,
+          hoursTheyProvide: hoursFromGiver,
+          hoursYouProvide: hoursToReceiver
+        })
+        if (receiver.profile.id !== giver.profile.id) {
+          loopPartners.push({
+            userId: receiver.profile.id,
+            userName: receiver.profile.display_name || 'Matched Member',
+            location: receiver.profile.location,
+            offersCategory: receiver.offerCategory,
+            needsCategory: receiver.needCategory,
+            trustScore: resolveTrust(receiver),
+            relation: 'deliver_to' as const,
+            hoursTheyProvide: 0,
+            hoursYouProvide: hoursToReceiver
+          })
+        }
+      }
+
+      const primaryPartner = loopPartners[0]
+      const trustScore = primaryPartner?.trustScore ?? resolveTrust(myParticipant)
+      const isPerfectCategoryMatch = myParticipant.offerCategory === primaryPartner?.needsCategory
       const baseScore = Math.min(
         95,
         Math.round(trustScore * 0.6 + (isPerfectCategoryMatch ? 35 : 20))
       )
 
-      const hoursOffered = Number(
-        Math.max(1, trustScore / 20 + HOURS_BASELINE - 1).toFixed(1)
-      )
-
       const exchangeRateBtoA = isPerfectCategoryMatch ? 1 : 1.2
       const savings = Math.max(
         10000,
-        Math.round(hoursOffered * 4500 + trustScore * 80)
+        Math.round((primaryPartner?.hoursTheyProvide ?? hoursFromGiver) * 4500 + trustScore * 80)
       )
 
       return {
@@ -119,14 +178,14 @@ export default function DiscoverTinder() {
         participantId: myParticipant.id,
         score: baseScore,
         userB: {
-          userId: otherParticipant.profile.id,
-          userName: otherParticipant.profile.display_name || 'Matched Member',
-          location: otherParticipant.profile.location,
-          category: offersCategory,
-          offersCategory,
-          needsCategory,
-          hoursOffered,
-          trustScore
+          userId: primaryPartner?.userId ?? giver.profile.id,
+          userName: primaryPartner?.userName ?? (giver.profile.display_name || 'Matched Member'),
+          location: primaryPartner?.location ?? giver.profile.location,
+          category: primaryPartner?.offersCategory ?? receiveCategory,
+          offersCategory: primaryPartner?.offersCategory ?? receiveCategory,
+          needsCategory: primaryPartner?.needsCategory ?? deliverCategory,
+          hoursOffered: primaryPartner?.hoursTheyProvide ?? hoursFromGiver,
+          trustScore: primaryPartner?.trustScore ?? trustScore
         },
         exchangeRateAtoB: Number((1 / exchangeRateBtoA).toFixed(2)),
         exchangeRateBtoA: Number(exchangeRateBtoA.toFixed(2)),
@@ -134,7 +193,10 @@ export default function DiscoverTinder() {
         estimatedSavings: {
           userA: savings,
           userB: Math.round(savings * 0.8)
-        }
+        },
+        myOfferCategory: myParticipant.offerCategory,
+        myNeedCategory: myParticipant.needCategory,
+        loopPartners
       }
     },
     [user]
@@ -153,7 +215,7 @@ export default function DiscoverTinder() {
 
       const groups = await matchingEngine.getMatchesForUser(user.id)
       const swipeMatches = groups
-        .filter((group) => group.type === 'two_way' && group.status === 'pending')
+        .filter((group) => group.status === 'pending')
         .map(buildSwipeMatch)
         .filter((match): match is TinderCardMatch => Boolean(match))
 
@@ -536,6 +598,35 @@ export default function DiscoverTinder() {
                     </div>
                   </div>
                 </div>
+
+                {infoMatch.loopPartners.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Loop Participants</h4>
+                    <div className="space-y-2 text-sm">
+                      {infoMatch.loopPartners.map((partner) => (
+                        <div
+                          key={partner.userId}
+                          className="flex items-start justify-between rounded-lg border p-3"
+                        >
+                          <div>
+                            <div className="font-medium">{partner.userName}</div>
+                            <div className="text-xs text-muted-foreground capitalize">
+                              {partner.relation === 'receive_from'
+                                ? 'You receive from this partner'
+                                : partner.relation === 'deliver_to'
+                                  ? 'You deliver to this partner'
+                                  : 'Mutual trade partner'}
+                            </div>
+                          </div>
+                          <div className="text-right text-xs text-muted-foreground">
+                            <div>{partner.hoursTheyProvide.toFixed(1)} hrs → you</div>
+                            <div>{partner.hoursYouProvide.toFixed(1)} hrs ← you</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <h4 className="font-semibold mb-2">Add a Message (Optional)</h4>

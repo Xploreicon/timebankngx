@@ -1,4 +1,4 @@
-# TimeBank NG - Deployment Guide
+# Timebankng - Deployment Guide
 
 ## Environment Setup
 
@@ -18,12 +18,12 @@
 ### Production Deployment on Vercel
 
 #### One-Click Deploy
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Xploreicon/time-buoy-ng.git)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR-GITHUB-ORG/timebankng.git)
 
 #### Manual Setup
 1. **Connect Repository**
    - Connect your GitHub repository to Vercel
-   - Import the `time-buoy-ng` project
+   - Import the `timebankng` project
 
 2. **Configure Environment Variables**
    Add the following environment variables in your Vercel project settings:

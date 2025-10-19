@@ -6,6 +6,18 @@ import { useMemo, useState } from 'react'
 import { NIGERIAN_CATEGORIES } from '@/config/categories'
 import { Progress } from '@/components/ui/progress'
 
+type LoopRelation = 'deliver_to' | 'receive_from' | 'mutual'
+
+export interface LoopPartner {
+  userId: string
+  userName: string
+  location?: string
+  offersCategory: string
+  needsCategory: string
+  trustScore: number
+  relation: LoopRelation
+}
+
 export interface TinderCardMatch {
   type: '2-way' | '3-way'
   score: number
@@ -25,6 +37,9 @@ export interface TinderCardMatch {
   exchangeRateBtoA: number
   isBalancedTrade: boolean
   estimatedSavings: { userA: number; userB: number }
+  myOfferCategory: string
+  myNeedCategory: string
+  loopPartners: LoopPartner[]
 }
 
 interface TinderCardProps {

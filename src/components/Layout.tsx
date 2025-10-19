@@ -3,23 +3,30 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useAppStore } from '@/store/appStore'
-import { 
-  Home, 
-  Search, 
-  ArrowLeftRight, 
-  Briefcase, 
-  User, 
+import {
+  Home,
+  Search,
+  ArrowLeftRight,
+  Briefcase,
+  User,
   LogOut,
   Clock,
-  Menu
+  Menu,
+  MessageCircle,
+  MailWarning
 } from 'lucide-react'
 import { useState } from 'react'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { toast } from '@/hooks/use-toast'
+import { supabase } from '@/integrations/supabase/client'
 
 const navigationItems = [
   { path: '/dashboard', label: 'Dashboard', icon: Home },
   { path: '/discover', label: 'Discover', icon: Search },
   { path: '/trades', label: 'My Trades', icon: ArrowLeftRight },
+  { path: '/proposals', label: 'Proposals', icon: MessageCircle },
+  { path: '/wallet', label: 'Wallet', icon: Clock },
   { path: '/services', label: 'Services', icon: Briefcase },
   { path: '/profile', label: 'Profile', icon: User }
 ]
@@ -29,10 +36,41 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const { profile, signOut } = useAppStore()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [resendingEmail, setResendingEmail] = useState(false)
 
   const handleSignOut = async () => {
     await signOut()
     navigate('/')
+  }
+
+  const showEmailReminder = !!profile && !(profile.email_verified ?? false)
+
+  const handleResendVerification = async () => {
+    if (!profile?.email || resendingEmail) return
+
+    try {
+      setResendingEmail(true)
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: profile.email
+      })
+
+      if (error) throw error
+
+      toast({
+        title: 'Verification email sent',
+        description: 'Check your inbox and spam folder for the confirmation link.'
+      })
+    } catch (error) {
+      console.error('Failed to resend verification email:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Unable to send email',
+        description: error instanceof Error ? error.message : 'Please try again later.'
+      })
+    } finally {
+      setResendingEmail(false)
+    }
   }
 
   const isActive = (path: string) => location.pathname === path
@@ -98,7 +136,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-secondary rounded-full">
               <Clock className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">
-                {profile?.trust_score || 0} credits
+                {profile?.available_credits || 0} credits
               </span>
             </div>
 
@@ -159,7 +197,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <div className="flex items-center gap-2 p-3 bg-secondary rounded-lg mb-4">
                       <Clock className="h-4 w-4 text-primary" />
                       <span className="text-sm font-medium">
-                        {profile?.trust_score || 0} credits
+                        {profile?.available_credits || 0} credits
                       </span>
                     </div>
                     <Button 
@@ -179,7 +217,32 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6 space-y-4">
+        {showEmailReminder && (
+          <Alert className="border-amber-300 bg-amber-50">
+            <div className="flex items-start gap-3">
+              <MailWarning className="mt-1 h-5 w-5 text-amber-600" />
+              <div className="space-y-2">
+                <AlertTitle className="text-amber-700">Email verification pending</AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <span>
+                    We still need you to confirm <strong>{profile?.email}</strong>. Some features may remain limited until you verify.
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResendVerification}
+                      disabled={resendingEmail}
+                    >
+                      {resendingEmail ? 'Sending…' : 'Resend verification email'}
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </div>
+            </div>
+          </Alert>
+        )}
         {children}
       </main>
 

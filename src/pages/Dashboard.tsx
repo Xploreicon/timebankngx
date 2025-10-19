@@ -1,17 +1,25 @@
+import { useEffect, useMemo } from 'react'
 import Layout from '@/components/Layout'
 import { TimeCreditsCard } from '@/components/common/TimeCreditsCard'
 import { ActiveTradesGrid } from '@/components/common/ActiveTradesGrid'
-import { QuickActionsBar } from '@/components/common/QuickActionsBar'
 import { NotificationsFeed } from '@/components/common/NotificationsFeed'
 import { useAppStore } from '@/store/appStore'
-import { Stars } from '@/components/common/Stars'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Link } from 'react-router-dom'
 import { Search, Plus, TrendingUp, Clock } from 'lucide-react'
 
 const Dashboard = () => {
-  const { profile } = useAppStore()
+  const { profile, trades, fetchTrades } = useAppStore()
+  const activeTrades = useMemo(
+    () => trades.filter(t => ['active', 'accepted', 'pending'].includes(t.status)).length,
+    [trades]
+  )
+  const responseHours = profile?.average_response_hours ?? 0
+
+  useEffect(() => {
+    fetchTrades()
+  }, [fetchTrades])
   
   return (
     <Layout>
@@ -36,9 +44,9 @@ const Dashboard = () => {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">3</div>
+              <div className="text-2xl font-bold">{activeTrades}</div>
               <p className="text-xs text-muted-foreground">
-                +2 from last week
+                {activeTrades === 0 ? 'No active trades yet' : 'In progress across your services'}
               </p>
             </CardContent>
           </Card>
@@ -49,9 +57,11 @@ const Dashboard = () => {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">2.4h</div>
+              <div className="text-2xl font-bold">
+                {responseHours > 0 ? `${responseHours.toFixed(1)}h` : '—'}
+              </div>
               <p className="text-xs text-muted-foreground">
-                Average response time
+                {responseHours > 0 ? 'Average response time' : 'No response data yet'}
               </p>
             </CardContent>
           </Card>

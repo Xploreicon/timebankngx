@@ -1,11 +1,14 @@
 import Layout from '@/components/Layout'
 import { MetricsGrid } from '@/components/analytics/MetricsGrid'
-import { TimeFlowChart } from '@/components/analytics/TimeFlowChart'
+import { LazyTimeFlowChart, LazyNetworkGraph, withLazyLoading } from '@/components/LazyComponents'
 import { ROICalculator } from '@/components/analytics/ROICalculator'
-import { NetworkGraph } from '@/components/analytics/NetworkGraph'
 import { LevelProgressBar } from '@/components/gamification/LevelProgressBar'
 import { AchievementGrid } from '@/components/gamification/AchievementGrid'
 import { BarChart3 } from 'lucide-react'
+
+// Create wrapped components with proper loading states
+const TimeFlowChartWithLoading = withLazyLoading(LazyTimeFlowChart, "Loading time flow charts...");
+const NetworkGraphWithLoading = withLazyLoading(LazyNetworkGraph, "Loading network visualization...");
 
 export default function AnalyticsPage() {
   const metrics = {
@@ -36,7 +39,7 @@ export default function AnalyticsPage() {
         {/* Charts and Progress */}
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <TimeFlowChart />
+            <TimeFlowChartWithLoading />
           </div>
           <div className="space-y-4">
             <LevelProgressBar {...levelData} />
@@ -49,7 +52,7 @@ export default function AnalyticsPage() {
           <div className="lg:col-span-2">
             <AchievementGrid />
           </div>
-          <NetworkGraph />
+          <NetworkGraphWithLoading />
         </div>
       </main>
     </Layout>

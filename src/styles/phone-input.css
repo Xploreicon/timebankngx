@@ -1,0 +1,116 @@
+/* Custom styles for react-phone-input-2 to match shadcn/ui theme */
+
+.phone-input-container {
+  @apply relative;
+}
+
+.phone-input-container .react-tel-input {
+  @apply w-full;
+}
+
+.phone-input-container .react-tel-input .form-control {
+  @apply w-full h-10 px-3 py-2 text-sm border border-input bg-background;
+  @apply ring-offset-background placeholder:text-muted-foreground;
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  @apply disabled:cursor-not-allowed disabled:opacity-50;
+  @apply rounded-md;
+  padding-left: 48px !important;
+}
+
+.phone-input-container .react-tel-input .flag-dropdown {
+  @apply border border-input bg-background rounded-l-md;
+  @apply hover:bg-accent hover:text-accent-foreground;
+}
+
+.phone-input-container .react-tel-input .flag-dropdown:hover {
+  @apply bg-accent;
+}
+
+.phone-input-container .react-tel-input .flag-dropdown.open {
+  @apply bg-accent;
+}
+
+.phone-input-container .react-tel-input .flag-dropdown .selected-flag {
+  @apply px-3 py-2;
+  @apply hover:bg-accent;
+}
+
+.phone-input-container .react-tel-input .flag-dropdown .selected-flag .arrow {
+  @apply border-t-muted-foreground;
+}
+
+.phone-input-container .react-tel-input .flag-dropdown .selected-flag .arrow.up {
+  @apply border-b-muted-foreground border-t-transparent;
+}
+
+.phone-input-container .react-tel-input .country-list {
+  @apply border border-border bg-popover text-popover-foreground shadow-lg rounded-md;
+  @apply max-h-40 overflow-y-auto;
+  margin-top: 1px;
+  z-index: 50;
+}
+
+.phone-input-container .react-tel-input .country-list .country {
+  @apply px-3 py-2 text-sm cursor-pointer;
+  @apply hover:bg-accent hover:text-accent-foreground;
+}
+
+.phone-input-container .react-tel-input .country-list .country.highlight {
+  @apply bg-accent text-accent-foreground;
+}
+
+.phone-input-container .react-tel-input .country-list .country .dial-code {
+  @apply text-muted-foreground;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .phone-input-container .react-tel-input .form-control {
+    color-scheme: dark;
+  }
+}
+
+/* Focus states */
+.phone-input-container .react-tel-input .form-control:focus {
+  @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
+  border-color: hsl(var(--ring));
+}
+
+/* Error states */
+.phone-input-container.error .react-tel-input .form-control {
+  @apply border-destructive;
+}
+
+.phone-input-container.error .react-tel-input .flag-dropdown {
+  @apply border-destructive;
+}
+
+/* Success states */
+.phone-input-container.success .react-tel-input .form-control {
+  @apply border-green-500;
+}
+
+.phone-input-container.success .react-tel-input .flag-dropdown {
+  @apply border-green-500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .phone-input-container .react-tel-input .country-list {
+    @apply max-h-32;
+  }
+}
+
+/* Nigerian flag and country specific styles */
+.phone-input-container .react-tel-input .flag.ng {
+  background-position: -2070px 0px; /* Adjust if flag position is wrong */
+}
+
+/* Loading state */
+.phone-input-container .loading .react-tel-input .form-control {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+.phone-input-container .loading .react-tel-input .flag-dropdown {
+  @apply opacity-50 cursor-not-allowed;
+}

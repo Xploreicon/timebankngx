@@ -2,6 +2,8 @@ import Layout from '@/components/Layout'
 import { useAppStore } from '@/store/appStore'
 import { Stars } from '@/components/common/Stars'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { PhoneVerificationCard } from '@/components/verification/PhoneVerificationCard'
+import { ReviewsList } from '@/components/profile/ReviewsList'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,8 +12,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Switch } from '@/components/ui/switch'
 import { useState, useEffect } from 'react'
-import { 
-  Camera, Shield, Phone, Mail, MapPin, Calendar, Clock, 
+import {
+  Camera, Shield, Phone, Mail, MapPin, Calendar, Clock,
   TrendingUp, Star, Edit, Share, Download, Copy, Settings,
   CheckCircle, AlertCircle, Users, Award, BarChart,
   Globe, MessageSquare, Eye, ExternalLink
@@ -354,6 +356,19 @@ export default function Profile() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Reviews & Ratings */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Reviews & Ratings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ReviewsList userId={profile.id} isOwnProfile={true} />
+          </CardContent>
+        </Card>
+
+        {/* Phone Verification Section */}
+        <PhoneVerificationCard />
 
       </div>
     </Layout>

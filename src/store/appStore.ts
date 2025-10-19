@@ -12,16 +12,34 @@ export interface Profile {
   location?: string
   category?: string
   trust_score: number
+  total_credits?: number
+  available_credits?: number
+  total_trades_completed?: number
+  success_rate?: number
+  average_response_hours?: number | null
   verification_phone: boolean
+  phone_verified?: boolean
   verification_email: boolean
+  email_verified?: boolean
   verification_cac: boolean
   is_onboarded: boolean
   avatar_url?: string
   created_at: string
   updated_at: string
+  needs?: string[]
 }
 
 interface NotificationItem { id: string; text: string; time: Date }
+
+interface SignUpPayload {
+  email: string
+  password: string
+  displayName: string
+  category?: string
+  location?: string
+  needs?: string[]
+  phone?: string
+}
 
 interface AppState {
   session: Session | null
@@ -39,7 +57,7 @@ interface AppState {
   // Auth
   setAuth: (session: Session | null, user: SupabaseUser | null) => void
   setProfile: (profile: Profile | null) => void
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ error?: string }>
+  signUp: (payload: SignUpPayload) => Promise<{ error?: string }>
   signIn: (email: string, password: string) => Promise<{ error?: string }>
   signOut: () => Promise<void>
   
@@ -67,10 +85,14 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
   trades: [],
 
   setAuth: (session, user) => {
+    const previousUserId = get().user?.id
+    const shouldReset = !user || (previousUserId !== undefined && user?.id !== previousUserId)
+
     set({ 
       session, 
       user, 
-      isAuthenticated: !!session && !!user 
+      isAuthenticated: !!session && !!user,
+      ...(shouldReset ? { trades: [], services: [], notifications: [] } : {})
     })
   },
 
@@ -81,17 +103,25 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
     })
   },
 
-  signUp: async (email: string, password: string, displayName?: string) => {
+  signUp: async ({ email, password, displayName, category, location, needs, phone }: SignUpPayload) => {
     try {
       set({ isLoading: true })
       
       const redirectUrl = `${window.location.origin}/auth/callback`
+      const metadata: Record<string, unknown> = {}
+
+      if (displayName) metadata.display_name = displayName
+      if (category) metadata.primary_category = category
+      if (location) metadata.location = location
+      if (phone) metadata.phone = phone
+      if (needs && needs.length > 0) metadata.needs = needs
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: redirectUrl,
-          data: displayName ? { display_name: displayName } : undefined
+          data: metadata
         }
       })
       
@@ -132,7 +162,10 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
         user: null,
         profile: null,
         isAuthenticated: false,
-        isOnboarded: false
+        isOnboarded: false,
+        notifications: [],
+        trades: [],
+        services: []
       })
     } catch (error) {
       console.error('Sign out error:', error)
@@ -154,7 +187,23 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
       // Update local state
       const currentProfile = get().profile
       if (currentProfile) {
-        set({ profile: { ...currentProfile, ...updates } })
+        const mergedProfile: Profile = {
+          ...currentProfile,
+          ...updates,
+        } as Profile
+
+        if ('phone_verified' in updates) {
+          mergedProfile.phone_verified = updates.phone_verified as boolean | undefined
+          if (updates.phone_verified) {
+            mergedProfile.verification_phone = true
+          }
+        }
+
+        if ('needs' in updates) {
+          mergedProfile.needs = updates.needs as string[] | undefined
+        }
+
+        set({ profile: mergedProfile })
       }
 
       return {}

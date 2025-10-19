@@ -1,5 +1,3 @@
-
-import { useEffect } from 'react'
 import { useAppStore } from '@/store/appStore'
 
 const toSafeDate = (value: unknown): Date | null => {
@@ -12,25 +10,12 @@ const toSafeDate = (value: unknown): Date | null => {
 }
 
 export const NotificationsFeed = () => {
-  const { notifications, addNotification } = useAppStore()
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      const texts = [
-        'New service match near Lagos!',
-        'Ada sent you a trade message.',
-        '2 new services in Creative category.',
-      ]
-      const text = texts[Math.floor(Math.random()*texts.length)]
-      addNotification(text)
-    }, 10000)
-    return () => clearInterval(id)
-  }, [addNotification])
+  const { notifications } = useAppStore()
 
   return (
     <div className="space-y-3">
       {notifications.slice(0,5).map(n => {
-        const dt = toSafeDate((n as any).time)
+        const dt = toSafeDate('time' in n ? n.time : null)
         const timeText = dt ? dt.toLocaleTimeString() : ''
         return (
           <div key={n.id} className="p-3 rounded-md border bg-card animate-fade-in">

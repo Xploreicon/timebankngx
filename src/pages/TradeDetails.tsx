@@ -2,45 +2,30 @@ import Layout from '@/components/Layout'
 import { useParams } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import { useState, useEffect, useMemo } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { toast } from '@/hooks/use-toast'
+import { TradeTimeline } from '@/components/trades/TradeTimeline'
+import { TimeLogger } from '@/components/trades/TimeLogger'
+import { TimeLogsList } from '@/components/trades/TimeLogsList'
+import { TradeActions } from '@/components/trades/TradeActions'
+import { TradeMessaging } from '@/components/trades/TradeMessaging'
+import { RatingDialog } from '@/components/trades/RatingDialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export default function TradeDetails(){
   const { id } = useParams()
-  const { trades, fetchTrades, addTradeMessage, user } = useAppStore()
-  const [message, setMessage] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const { trades, fetchTrades, profile } = useAppStore()
+  const [activeTab, setActiveTab] = useState('overview')
+  const [showRatingDialog, setShowRatingDialog] = useState(false)
 
   useEffect(() => {
     fetchTrades()
   }, [fetchTrades])
 
-  const trade = useMemo(() => 
-    trades.find(t => t.id === id), 
+  const trade = useMemo(() =>
+    trades.find(t => t.id === id),
     [trades, id]
   )
-
-  const sendMessage = async () => {
-    if (!message.trim() || !trade) return
-    
-    setIsLoading(true)
-    const { error } = await addTradeMessage(trade.id, { text: message })
-    
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to send message'
-      })
-    } else {
-      setMessage('')
-    }
-    setIsLoading(false)
-  }
 
   if (!trade) {
     return (
@@ -53,88 +38,193 @@ export default function TradeDetails(){
     )
   }
 
+  const isProvider = trade.provider_id === profile?.id
+  const isProposer = trade.proposer_id === profile?.id
+  const canApproveTimeLogs = (isProvider && trade.status === 'active') || (isProposer && trade.status === 'active')
+
+  // Get other party info for rating
+  const otherPartyId = isProposer ? trade.provider_id : trade.proposer_id
+  const otherPartyName = isProposer ? 'Provider' : 'Proposer' // In real app, fetch from profiles
+
   return (
     <Layout>
-      <main className="grid lg:grid-cols-[1fr_300px] gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Trade Communication</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 max-h-[400px] overflow-y-auto mb-4">
-              {/* Mock messages for now since we need to implement proper messaging */}
-              <div className="flex items-start gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>U</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 bg-secondary rounded-lg p-3">
-                  <p className="text-sm">Hello! I'm interested in this trade.</p>
-                  <span className="text-xs text-muted-foreground">2 hours ago</span>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3 justify-end">
-                <div className="flex-1 bg-primary text-primary-foreground rounded-lg p-3 max-w-[80%] ml-auto">
-                  <p className="text-sm">Great! When can we start?</p>
-                  <span className="text-xs opacity-80">1 hour ago</span>
-                </div>
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>M</AvatarFallback>
-                </Avatar>
-              </div>
-            </div>
-            
-            <div className="flex gap-2">
-              <Input 
-                placeholder="Type your message..." 
-                value={message}
-                onChange={e => setMessage(e.target.value)}
-                onKeyPress={e => e.key === 'Enter' && sendMessage()}
-              />
-              <Button onClick={sendMessage} disabled={isLoading || !message.trim()}>
-                Send
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Trade Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <h4 className="font-medium">Status</h4>
-                <Badge variant="secondary" className="capitalize">
-                  {trade.status}
-                </Badge>
-              </div>
-              
-              <div>
-                <h4 className="font-medium">Service Requested</h4>
-                <p className="text-sm text-muted-foreground">
-                  {trade.service_requested?.title || 'Service details'}
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-medium">Service Offered</h4>
-                <p className="text-sm text-muted-foreground">
-                  {trade.service_offered?.title || 'Service details'}
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-medium">Duration</h4>
-                <p className="text-sm text-muted-foreground">
-                  {trade.hours_requested || 1} hours requested
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Page Header */}
+        <div>
+          <h1 className="text-3xl font-bold">{trade.title}</h1>
+          <p className="text-muted-foreground mt-1">{trade.description}</p>
         </div>
-      </main>
+
+        {/* Main Content */}
+        <div className="grid lg:grid-cols-[1fr_380px] gap-6">
+          {/* Left Column - Tabs */}
+          <div>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="messages">Messages</TabsTrigger>
+                <TabsTrigger value="work">Work Logs</TabsTrigger>
+              </TabsList>
+
+              {/* Overview Tab */}
+              <TabsContent value="overview" className="space-y-6">
+                <TradeTimeline
+                  currentStatus={trade.status}
+                  createdAt={trade.created_at}
+                  acceptedAt={trade.accepted_at || undefined}
+                  startedAt={trade.started_at || undefined}
+                  completedAt={trade.completed_at || undefined}
+                  cancelledAt={trade.cancelled_at || undefined}
+                />
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Trade Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="font-medium text-sm text-muted-foreground">You Offer</h4>
+                        <p className="text-sm mt-1">
+                          {isProposer ? trade.proposer_hours : trade.provider_hours} hours
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {isProposer ? trade.proposer_credits : trade.provider_credits} credits
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-sm text-muted-foreground">You Receive</h4>
+                        <p className="text-sm mt-1">
+                          {isProposer ? trade.provider_hours : trade.proposer_hours} hours
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {isProposer ? trade.provider_credits : trade.proposer_credits} credits
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium text-sm text-muted-foreground">Exchange Rate</h4>
+                      <p className="text-sm mt-1">{trade.exchange_rate.toFixed(2)}x</p>
+                    </div>
+
+                    {trade.delivery_deadline && (
+                      <div>
+                        <h4 className="font-medium text-sm text-muted-foreground">Deadline</h4>
+                        <p className="text-sm mt-1">
+                          {new Date(trade.delivery_deadline).toLocaleDateString()}
+                        </p>
+                      </div>
+                    )}
+
+                    {trade.terms_and_conditions && (
+                      <div>
+                        <h4 className="font-medium text-sm text-muted-foreground">Terms & Conditions</h4>
+                        <p className="text-sm mt-1 text-muted-foreground">
+                          {trade.terms_and_conditions}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Messages Tab */}
+              <TabsContent value="messages">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Trade Communication</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {profile && (
+                      <TradeMessaging
+                        tradeId={trade.id}
+                        currentUserId={profile.id}
+                        otherPartyId={isProposer ? trade.provider_id : trade.proposer_id}
+                        otherPartyName={isProposer ? 'Provider' : 'Proposer'}
+                      />
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Work Logs Tab */}
+              <TabsContent value="work" className="space-y-6">
+                {trade.status === 'active' && profile && (
+                  <TimeLogger
+                    tradeId={trade.id}
+                    userId={profile.id}
+                    onLogCreated={() => fetchTrades()}
+                  />
+                )}
+
+                <TimeLogsList
+                  tradeId={trade.id}
+                  currentUserId={profile?.id || ''}
+                  canApprove={canApproveTimeLogs}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Right Column - Actions & Info */}
+          <div className="space-y-4">
+            {profile && (
+              <TradeActions
+                trade={trade as any}
+                currentUserId={profile.id}
+                onStatusUpdate={fetchTrades}
+                onRequestRating={() => setShowRatingDialog(true)}
+              />
+            )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Info</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Status:</span>
+                  <Badge variant="secondary" className="ml-2 capitalize">
+                    {trade.status}
+                  </Badge>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Priority:</span>
+                  <span className="ml-2">{trade.priority_level || 3}/5</span>
+                </div>
+                {trade.requires_physical_meetup && (
+                  <div>
+                    <span className="text-muted-foreground">Location:</span>
+                    <p className="mt-1">{trade.meetup_location || 'To be determined'}</p>
+                  </div>
+                )}
+                <div>
+                  <span className="text-muted-foreground">Preferred Contact:</span>
+                  <span className="ml-2 capitalize">{trade.preferred_communication_method || 'WhatsApp'}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Rating Dialog */}
+        {profile && showRatingDialog && (
+          <RatingDialog
+            isOpen={showRatingDialog}
+            onClose={() => setShowRatingDialog(false)}
+            tradeId={trade.id}
+            reviewerId={profile.id}
+            revieweeId={otherPartyId}
+            revieweeName={otherPartyName}
+            serviceId={isProposer ? trade.provider_service_id || undefined : trade.proposer_service_id || undefined}
+            onReviewSubmitted={() => {
+              fetchTrades()
+              setShowRatingDialog(false)
+            }}
+          />
+        )}
+      </div>
     </Layout>
   )
 }

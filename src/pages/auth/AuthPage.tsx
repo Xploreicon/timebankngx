@@ -4,20 +4,50 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAppStore } from '@/store/appStore'
 import { useNavigate } from 'react-router-dom'
 import { toast } from '@/hooks/use-toast'
 import { Loader2, Mail, Lock, User } from 'lucide-react'
+import { NIGERIAN_CATEGORIES } from '@/config/categories'
 
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [signInForm, setSignInForm] = useState({ email: '', password: '' })
-  const [signUpForm, setSignUpForm] = useState({ 
-    email: '', 
-    password: '', 
+  const [signUpForm, setSignUpForm] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
     displayName: '',
-    confirmPassword: ''
+    phone: '',
+    category: '',
+    location: '',
+    needs: [] as string[]
   })
+
+  const categories = NIGERIAN_CATEGORIES.map(category => ({
+    id: category.id,
+    label: category.name,
+    icon: category.icon
+  }))
+
+  const locations = [
+    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
+    'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu',
+    'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi',
+    'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo',
+    'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara', 'FCT'
+  ]
+
+  const toggleNeed = (value: string) => {
+    setSignUpForm(prev => {
+      const exists = prev.needs.includes(value)
+      return {
+        ...prev,
+        needs: exists ? prev.needs.filter(item => item !== value) : [...prev.needs, value]
+      }
+    })
+  }
   
   const { signIn, signUp } = useAppStore()
   const navigate = useNavigate()
@@ -67,14 +97,45 @@ export default function AuthPage() {
       return
     }
 
+    if (!signUpForm.displayName.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing name',
+        description: 'Please provide your display name.'
+      })
+      return
+    }
+
+    if (!signUpForm.category) {
+      toast({
+        variant: 'destructive',
+        title: 'Select a category',
+        description: 'Let others know what service you offer.'
+      })
+      return
+    }
+
+    if (signUpForm.needs.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'What do you need?',
+        description: 'Select at least one area where you need help so we can match you.'
+      })
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      const { error } = await signUp(
-        signUpForm.email, 
-        signUpForm.password, 
-        signUpForm.displayName
-      )
+      const { error } = await signUp({
+        email: signUpForm.email,
+        password: signUpForm.password,
+        displayName: signUpForm.displayName,
+        category: signUpForm.category,
+        location: signUpForm.location,
+        needs: signUpForm.needs,
+        phone: signUpForm.phone
+      })
       
       if (error) {
         toast({
@@ -88,6 +149,17 @@ export default function AuthPage() {
       toast({
         title: 'Account Created!',
         description: 'Please check your email to verify your account.'
+      })
+
+      setSignUpForm({
+        email: '',
+        password: '',
+        confirmPassword: '',
+        displayName: '',
+        phone: '',
+        category: '',
+        location: '',
+        needs: []
       })
       
     } catch (error) {
@@ -154,9 +226,9 @@ export default function AuthPage() {
                   </div>
                 </div>
                 
-                <Button 
-                  type="submit" 
-                  className="w-full" 
+                <Button
+                  type="submit"
+                  className="w-full"
                   disabled={isLoading}
                 >
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -178,6 +250,7 @@ export default function AuthPage() {
                       className="pl-9"
                       value={signUpForm.displayName}
                       onChange={(e) => setSignUpForm({...signUpForm, displayName: e.target.value})}
+                      required
                     />
                   </div>
                 </div>
@@ -229,7 +302,78 @@ export default function AuthPage() {
                     />
                   </div>
                 </div>
-                
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-phone">Phone Number (optional)</Label>
+                  <Input
+                    id="signup-phone"
+                    type="tel"
+                    placeholder="+234 xxx xxx xxxx"
+                    value={signUpForm.phone}
+                    onChange={(e) => setSignUpForm({...signUpForm, phone: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>What do you need help with?</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Select at least one area where you&apos;d like support from the community.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map(category => (
+                      <Button
+                        key={category.id}
+                        type="button"
+                        variant={signUpForm.needs.includes(category.id) ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => toggleNeed(category.id)}
+                      >
+                        <span className="mr-1">{category.icon}</span>
+                        {category.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Primary Category</Label>
+                  <Select
+                    value={signUpForm.category || ''}
+                    onValueChange={(value) => setSignUpForm({...signUpForm, category: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select the service you offer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(category => (
+                        <SelectItem key={category.id} value={category.id}>
+                          <span className="mr-2">{category.icon}</span>
+                          {category.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Location</Label>
+                  <Select
+                    value={signUpForm.location || ''}
+                    onValueChange={(value) => setSignUpForm({...signUpForm, location: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your state" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map(location => (
+                        <SelectItem key={location} value={location}>
+                          {location}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <Button 
                   type="submit" 
                   className="w-full" 

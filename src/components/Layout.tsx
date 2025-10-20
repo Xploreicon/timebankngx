@@ -15,7 +15,7 @@ import {
   MessageCircle,
   MailWarning
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { toast } from '@/hooks/use-toast'
@@ -34,7 +34,13 @@ const navigationItems = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { profile, signOut } = useAppStore()
+  const {
+    profile,
+    signOut,
+    dismissedEmailReminder,
+    dismissEmailReminder,
+    resetEmailReminder,
+  } = useAppStore()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [resendingEmail, setResendingEmail] = useState(false)
 
@@ -45,6 +51,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const showEmailReminder = !!profile && !(profile.email_verified ?? false)
 
+  useEffect(() => {
+    if (!showEmailReminder) {
+      resetEmailReminder()
+    }
+  }, [showEmailReminder, resetEmailReminder])
+
   const handleResendVerification = async () => {
     if (!profile?.email || resendingEmail) return
 
@@ -52,7 +64,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       setResendingEmail(true)
       const { error } = await supabase.auth.resend({
         type: 'signup',
-        email: profile.email
+        email: profile.email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
       })
 
       if (error) throw error
@@ -214,11 +229,47 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </Sheet>
           </div>
         </div>
+
+        {showEmailReminder && !dismissedEmailReminder && (
+          <div className="border-t border-amber-200 bg-amber-50">
+            <div className="container mx-auto px-4 py-3">
+              <Alert className="bg-transparent border-0 p-0">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <MailWarning className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div>
+                      <AlertTitle className="text-amber-900">Verify your email</AlertTitle>
+                      <AlertDescription className="text-amber-800">
+                        We sent a confirmation link to <strong>{profile?.email}</strong>. Please confirm to unlock every feature.
+                      </AlertDescription>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 sm:shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => dismissEmailReminder(true)}
+                    >
+                      Remind me later
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleResendVerification}
+                      disabled={resendingEmail}
+                    >
+                      {resendingEmail ? 'Sending…' : 'Resend link'}
+                    </Button>
+                  </div>
+                </div>
+              </Alert>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 space-y-4">
-        {showEmailReminder && (
+        {showEmailReminder && !dismissedEmailReminder && (
           <Alert className="border-amber-300 bg-amber-50">
             <div className="flex items-start gap-3">
               <MailWarning className="mt-1 h-5 w-5 text-amber-600" />
@@ -231,6 +282,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <div className="flex flex-wrap gap-2">
                     <Button
                       variant="outline"
+                      size="sm"
+                      onClick={() => dismissEmailReminder(true)}
+                    >
+                      Dismiss
+                    </Button>
+                    <Button
                       size="sm"
                       onClick={handleResendVerification}
                       disabled={resendingEmail}

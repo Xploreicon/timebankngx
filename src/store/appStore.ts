@@ -47,6 +47,7 @@ interface AppState {
   profile: Profile | null
   isAuthenticated: boolean
   isOnboarded: boolean
+  dismissedEmailReminder: boolean
   notifications: NotificationItem[]
   isLoading: boolean
   
@@ -60,6 +61,8 @@ interface AppState {
   signUp: (payload: SignUpPayload) => Promise<{ error?: string }>
   signIn: (email: string, password: string) => Promise<{ error?: string }>
   signOut: () => Promise<void>
+  dismissEmailReminder: (dismissed: boolean) => void
+  resetEmailReminder: () => void
   
   // Profile & Onboarding
   updateProfile: (updates: Partial<Profile>) => Promise<{ error?: string }>
@@ -79,6 +82,7 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
   profile: null,
   isAuthenticated: false,
   isOnboarded: false,
+  dismissedEmailReminder: false,
   notifications: [],
   isLoading: false,
   services: [],
@@ -165,12 +169,16 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
         isOnboarded: false,
         notifications: [],
         trades: [],
-        services: []
+        services: [],
+        dismissedEmailReminder: false
       })
     } catch (error) {
       console.error('Sign out error:', error)
     }
   },
+
+  dismissEmailReminder: (dismissed) => set({ dismissedEmailReminder: dismissed }),
+  resetEmailReminder: () => set({ dismissedEmailReminder: false }),
 
   updateProfile: async (updates: Partial<Profile>) => {
     try {
@@ -257,15 +265,24 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
       const { user } = get()
       if (!user) return { error: 'Not authenticated' }
 
-      const { error } = await supabase.from('services').insert({
+      const payload = {
         user_id: user.id,
         title: serviceData.title,
         description: serviceData.description,
         category: serviceData.category,
-        hourly_rate: 1,
-        availability: true,
-        skill_level: 'Intermediate'
-      })
+        base_hourly_rate: serviceData.baseHourlyRate ?? 0,
+        credits_per_hour: serviceData.creditsPerHour ?? serviceData.baseHourlyRate ?? 0,
+        minimum_hours: serviceData.minimum_hours ?? 1,
+        maximum_hours: serviceData.maximum_hours ?? Math.max(serviceData.minimum_hours ?? 1, 8),
+        skill_level: serviceData.skillLevel ?? 'Intermediate',
+        is_available: serviceData.is_available ?? true,
+        serves_remote: serviceData.serves_remote ?? true,
+        serves_onsite: serviceData.serves_onsite ?? false,
+        tags: serviceData.tags ?? [],
+        portfolio_images: serviceData.portfolio_images ?? [],
+      }
+
+      const { error } = await supabase.from('services').insert(payload)
 
       if (error) return { error: error.message }
 
